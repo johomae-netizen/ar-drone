@@ -2,48 +2,32 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Drone AR Control</title>
+    <title>Drone AR Dual Joystick</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.2/aframe/build/aframe-ar.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
     <style>
       body { margin:0; overflow:hidden; }
-      #joystick {
+      #leftJoystick, #rightJoystick {
         position: fixed;
         bottom: 20px;
-        left: 20px;
         width: 150px;
         height: 150px;
         z-index: 10;
       }
-      #buttons {
-        position: fixed;
-        bottom: 40px;
-        right: 20px;
-        z-index: 10;
-      }
-      .control-btn {
-        display: block;
-        margin: 5px;
-        padding: 10px 20px;
-        font-size: 18px;
-        background: #007bff;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-      }
+      #leftJoystick { left: 20px; }
+      #rightJoystick { right: 20px; }
     </style>
   </head>
 
   <body>
     <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
-      <!-- HIROマーカー -->
       <a-marker preset="hiro">
         <a-entity 
           id="drone"
           gltf-model="drone.glb"
-          scale="0.1 0.1 0.1"
+          scale="10 10 10"
           position="0 0 0"
           rotation="0 0 0">
         </a-entity>
@@ -51,70 +35,62 @@
       <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- ジョイスティックUI -->
-    <div id="joystick"></div>
-
-    <!-- 上昇/下降/回転ボタン -->
-    <div id="buttons">
-      <button class="control-btn" onclick="moveUp()">⬆ 上昇</button>
-      <button class="control-btn" onclick="moveDown()">⬇ 下降</button>
-      <button class="control-btn" onclick="rotateLeft()">⟲ 左回転</button>
-      <button class="control-btn" onclick="rotateRight()">⟳ 右回転</button>
-    </div>
+    <!-- 左右のジョイスティック -->
+    <div id="leftJoystick"></div>
+    <div id="rightJoystick"></div>
 
     <script>
       const drone = document.querySelector("#drone");
 
-      // nipple.jsでジョイスティック作成（前後左右）
-      const joystick = nipplejs.create({
-        zone: document.getElementById('joystick'),
+      // ==============================
+      // 左ジョイスティック（上昇・下降・旋回）
+      // ==============================
+      const leftJoy = nipplejs.create({
+        zone: document.getElementById('leftJoystick'),
         mode: 'static',
         position: { left: '75px', bottom: '75px' },
-        color: 'blue'
+        color: 'red'
       });
 
-      // ドローンの移動処理
-      function moveDrone(x, z) {
-        const pos = drone.getAttribute("position");
-        pos.x += x;
-        pos.z += z;
-        drone.setAttribute("position", pos);
-      }
-
-      // ジョイスティックで前後左右
-      joystick.on('move', (evt, data) => {
+      leftJoy.on('move', (evt, data) => {
         if (data && data.vector) {
-          moveDrone(data.vector.x * 0.05, data.vector.y * 0.05);
+          const pos = drone.getAttribute("position");
+          const rot = drone.getAttribute("rotation");
+
+          // 上昇・下降
+          pos.y += data.vector.y * -0.05; // 上で+、下で-
+
+          // 左旋回・右旋回
+          rot.y += data.vector.x * 2; // 左で+、右で-
+
+          drone.setAttribute("position", pos);
+          drone.setAttribute("rotation", rot);
         }
       });
 
-      // 上昇
-      function moveUp() {
-        const pos = drone.getAttribute("position");
-        pos.y += 0.1;
-        drone.setAttribute("position", pos);
-      }
+      // ==============================
+      // 右ジョイスティック（前後左右移動）
+      // ==============================
+      const rightJoy = nipplejs.create({
+        zone: document.getElementById('rightJoystick'),
+        mode: 'static',
+        position: { right: '75px', bottom: '75px' },
+        color: 'blue'
+      });
 
-      // 下降
-      function moveDown() {
-        const pos = drone.getAttribute("position");
-        pos.y -= 0.1;
-        drone.setAttribute("position", pos);
-      }
+      rightJoy.on('move', (evt, data) => {
+        if (data && data.vector) {
+          const pos = drone.getAttribute("position");
 
-      // 左回転
-      function rotateLeft() {
-        const rot = drone.getAttribute("rotation");
-        rot.y += 10;
-        drone.setAttribute("rotation", rot);
-      }
+          // 前進・後退
+          pos.z += data.vector.y * 0.05;
 
-      // 右回転
-      function rotateRight() {
-        const rot = drone.getAttribute("rotation");
-        rot.y -= 10;
-        drone.setAttribute("rotation", rot);
-      }
+          // 左右移動
+          pos.x += data.vector.x * 0.05;
+
+          drone.setAttribute("position", pos);
+        }
+      });
     </script>
   </body>
 </html>
