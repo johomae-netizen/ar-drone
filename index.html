@@ -2,26 +2,119 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Drone AR</title>
+    <title>Drone AR Control</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.2/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
+    <style>
+      body { margin:0; overflow:hidden; }
+      #joystick {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 150px;
+        height: 150px;
+        z-index: 10;
+      }
+      #buttons {
+        position: fixed;
+        bottom: 40px;
+        right: 20px;
+        z-index: 10;
+      }
+      .control-btn {
+        display: block;
+        margin: 5px;
+        padding: 10px 20px;
+        font-size: 18px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+      }
+    </style>
   </head>
 
-  <body style="margin: 0; overflow: hidden;">
-    <!-- AR.js を有効化 -->
+  <body>
+    <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
-      <!-- HIROマーカーが検出されたらドローンを表示 -->
+      <!-- HIROマーカー -->
       <a-marker preset="hiro">
         <a-entity 
           id="drone"
           gltf-model="drone.glb"
-          scale="0.2 0.2 0.2"
-          position="0 0 0">
+          scale="0.1 0.1 0.1"
+          position="0 0 0"
+          rotation="0 0 0">
         </a-entity>
       </a-marker>
-
-      <!-- カメラエンティティ（必須） -->
       <a-entity camera></a-entity>
     </a-scene>
+
+    <!-- ジョイスティックUI -->
+    <div id="joystick"></div>
+
+    <!-- 上昇/下降/回転ボタン -->
+    <div id="buttons">
+      <button class="control-btn" onclick="moveUp()">⬆ 上昇</button>
+      <button class="control-btn" onclick="moveDown()">⬇ 下降</button>
+      <button class="control-btn" onclick="rotateLeft()">⟲ 左回転</button>
+      <button class="control-btn" onclick="rotateRight()">⟳ 右回転</button>
+    </div>
+
+    <script>
+      const drone = document.querySelector("#drone");
+
+      // nipple.jsでジョイスティック作成（前後左右）
+      const joystick = nipplejs.create({
+        zone: document.getElementById('joystick'),
+        mode: 'static',
+        position: { left: '75px', bottom: '75px' },
+        color: 'blue'
+      });
+
+      // ドローンの移動処理
+      function moveDrone(x, z) {
+        const pos = drone.getAttribute("position");
+        pos.x += x;
+        pos.z += z;
+        drone.setAttribute("position", pos);
+      }
+
+      // ジョイスティックで前後左右
+      joystick.on('move', (evt, data) => {
+        if (data && data.vector) {
+          moveDrone(data.vector.x * 0.05, data.vector.y * 0.05);
+        }
+      });
+
+      // 上昇
+      function moveUp() {
+        const pos = drone.getAttribute("position");
+        pos.y += 0.1;
+        drone.setAttribute("position", pos);
+      }
+
+      // 下降
+      function moveDown() {
+        const pos = drone.getAttribute("position");
+        pos.y -= 0.1;
+        drone.setAttribute("position", pos);
+      }
+
+      // 左回転
+      function rotateLeft() {
+        const rot = drone.getAttribute("rotation");
+        rot.y += 10;
+        drone.setAttribute("rotation", rot);
+      }
+
+      // 右回転
+      function rotateRight() {
+        const rot = drone.getAttribute("rotation");
+        rot.y -= 10;
+        drone.setAttribute("rotation", rot);
+      }
+    </script>
   </body>
 </html>
