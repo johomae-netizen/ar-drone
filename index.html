@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Drone AR Dual Joystick</title>
+    <title>Drone AR Dual Joystick Reset Mode</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.2/aframe/build/aframe-ar.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
@@ -23,17 +23,8 @@
   <body>
     <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
-      <!-- HIROマーカー -->
-      <a-marker preset="hiro" id="marker">
-        <!-- 最初に出現するドローン -->
-        <a-entity 
-          id="drone"
-          gltf-model="drone.glb"
-          scale="6 6 6"
-          position="0 0 0"
-          rotation="0 0 0">
-        </a-entity>
-      </a-marker>
+      <!-- HIROマーカー（空） -->
+      <a-marker preset="hiro" id="marker"></a-marker>
       <a-entity camera></a-entity>
     </a-scene>
 
@@ -44,15 +35,27 @@
     <script>
       const marker = document.querySelector("#marker");
       const scene = document.querySelector("a-scene");
-      const drone = document.querySelector("#drone");
+      let drone = null;
 
-      // マーカーを検出したらドローンをシーン直下に移動
+      // マーカーを検出するたびに新しいドローンを出す
       marker.addEventListener("markerFound", () => {
-        console.log("マーカー検出！");
-        if (drone.parentElement === marker) {
-          scene.appendChild(drone); // 一度だけ移動
-          drone.setAttribute("position", {x:0, y:1, z:-3}); // 初期位置を調整
+        console.log("マーカー検出！リセットします");
+
+        // 古いドローンがあれば削除
+        if (drone) {
+          drone.parentNode.removeChild(drone);
         }
+
+        // 新しいドローンを作成
+        drone = document.createElement("a-entity");
+        drone.setAttribute("id", "drone");
+        drone.setAttribute("gltf-model", "drone.glb");
+        drone.setAttribute("scale", "3 3 3");
+        drone.setAttribute("position", {x:0, y:0, z:-1});
+        drone.setAttribute("rotation", {x:0, y:0, z:0});
+
+        // シーンに追加
+        scene.appendChild(drone);
       });
 
       // ==============================
@@ -66,11 +69,11 @@
       });
 
       leftJoy.on('move', (evt, data) => {
-        if (data && data.vector) {
+        if (data && data.vector && drone) {
           const pos = drone.getAttribute("position");
           const rot = drone.getAttribute("rotation");
 
-          // 上昇・下降
+          // 上昇・下降（直感どおり）
           pos.y += data.vector.y * 0.05;
 
           // 左旋回・右旋回
@@ -92,10 +95,10 @@
       });
 
       rightJoy.on('move', (evt, data) => {
-        if (data && data.vector) {
+        if (data && data.vector && drone) {
           const pos = drone.getAttribute("position");
 
-          // 前進・後退
+          // 前進・後退（直感どおり）
           pos.z += data.vector.y * 0.05;
 
           // 左右移動
