@@ -2,43 +2,110 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>AR Debug Box</title>
+    <title>Drone AR Dual Joystick Reset Mode</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.2/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
     <style>
       body { margin:0; overflow:hidden; }
+      #leftJoystick, #rightJoystick {
+        position: fixed;
+        bottom: 20px;
+        width: 150px;
+        height: 150px;
+        z-index: 10;
+      }
+      #leftJoystick { left: 20px; }
+      #rightJoystick { right: 20px; }
     </style>
   </head>
 
   <body>
     <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
+      <!-- HIROマーカー（空） -->
       <a-marker preset="hiro" id="marker"></a-marker>
       <a-entity camera></a-entity>
     </a-scene>
 
+    <!-- 左右のジョイスティック -->
+    <div id="leftJoystick"></div>
+    <div id="rightJoystick"></div>
+
     <script>
       const marker = document.querySelector("#marker");
       const scene = document.querySelector("a-scene");
-      let box = null;
+      let drone = null;
 
+      // マーカーを検出するたびに新しいドローンを出す
       marker.addEventListener("markerFound", () => {
-        console.log("マーカー検出！赤い箱を生成");
+        console.log("マーカー検出！リセットします");
 
-        // 古いオブジェクト削除
-        if (box) {
-          box.parentNode.removeChild(box);
+        // 古いドローンがあれば削除
+        if (drone) {
+          drone.parentNode.removeChild(drone);
         }
 
-        // 赤い箱を生成
-        box = document.createElement("a-box");
-        box.setAttribute("color", "red");
-        box.setAttribute("depth", "1");
-        box.setAttribute("height", "1");
-        box.setAttribute("width", "1");
-        box.setAttribute("position", {x:0, y:1, z:-2});
+        // 新しいドローンを作成
+        drone = document.createElement("a-entity");
+        drone.setAttribute("id", "drone");
+        drone.setAttribute("gltf-model", "drone.glb");
+        drone.setAttribute("scale", "3 3 3");
+        drone.setAttribute("position", {x:0, y:0, z:-1});
+        drone.setAttribute("rotation", {x:0, y:0, z:0});
 
-        scene.appendChild(box);
+        // シーンに追加
+        scene.appendChild(drone);
+      });
+
+      // ==============================
+      // 左ジョイスティック（上昇・下降・旋回）
+      // ==============================
+      const leftJoy = nipplejs.create({
+        zone: document.getElementById('leftJoystick'),
+        mode: 'static',
+        position: { left: '75px', bottom: '75px' },
+        color: 'red'
+      });
+
+      leftJoy.on('move', (evt, data) => {
+        if (data && data.vector && drone) {
+          const pos = drone.getAttribute("position");
+          const rot = drone.getAttribute("rotation");
+
+          // 上昇・下降（直感どおり）
+          pos.y += data.vector.y * 0.05;
+
+          // 左旋回・右旋回
+          rot.y += data.vector.x * 2;
+
+          drone.setAttribute("position", pos);
+          drone.setAttribute("rotation", rot);
+        }
+      });
+
+      // ==============================
+      // 右ジョイスティック（前後左右移動）
+      // ==============================
+      const rightJoy = nipplejs.create({
+        zone: document.getElementById('rightJoystick'),
+        mode: 'static',
+        position: { right: '75px', bottom: '75px' },
+        color: 'blue'
+      });
+
+      rightJoy.on('move', (evt, data) => {
+        if (data && data.vector && drone) {
+          const pos = drone.getAttribute("position");
+
+          // 前進・後退（直感どおり）
+          pos.z += data.vector.y * 0.05;
+
+          // 左右移動
+          pos.x += data.vector.x * 0.05;
+
+          drone.setAttribute("position", pos);
+        }
       });
     </script>
   </body>
