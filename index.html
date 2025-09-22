@@ -24,14 +24,13 @@
     <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
       <a-marker preset="hiro">
-        <!-- ドローン本体（全体回転アニメーション付き） -->
+        <!-- ドローン本体（回転なし） -->
         <a-entity 
           id="drone"
           gltf-model="drone.glb"
-          scale="10 10 10"
+          scale="1 1 1"
           position="0 0 0"
-          rotation="0 0 0"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 2000">
+          rotation="0 0 0">
         </a-entity>
       </a-marker>
       <a-entity camera></a-entity>
@@ -59,8 +58,8 @@
           const pos = drone.getAttribute("position");
           const rot = drone.getAttribute("rotation");
 
-          // 上昇・下降
-          pos.y += data.vector.y * -0.05;
+          // 上昇・下降（反転修正済み）
+          pos.y -= data.vector.y * 0.05;
 
           // 左旋回・右旋回
           rot.y += data.vector.x * 2;
@@ -84,8 +83,8 @@
         if (data && data.vector) {
           const pos = drone.getAttribute("position");
 
-          // 前進・後退
-          pos.z += data.vector.y * 0.05;
+          // 前進・後退（反転修正済み）
+          pos.z -= data.vector.y * 0.05;
 
           // 左右移動
           pos.x += data.vector.x * 0.05;
