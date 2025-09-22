@@ -23,8 +23,9 @@
   <body>
     <!-- ARシーン -->
     <a-scene embedded arjs="sourceType: webcam;">
-      <a-marker preset="hiro">
-        <!-- ドローン本体（回転なし） -->
+      <!-- HIROマーカー -->
+      <a-marker preset="hiro" id="marker">
+        <!-- 最初に出現するドローン -->
         <a-entity 
           id="drone"
           gltf-model="drone.glb"
@@ -41,7 +42,18 @@
     <div id="rightJoystick"></div>
 
     <script>
+      const marker = document.querySelector("#marker");
+      const scene = document.querySelector("a-scene");
       const drone = document.querySelector("#drone");
+
+      // マーカーを検出したらドローンをシーン直下に移動
+      marker.addEventListener("markerFound", () => {
+        console.log("マーカー検出！");
+        if (drone.parentElement === marker) {
+          scene.appendChild(drone); // 一度だけ移動
+          drone.setAttribute("position", {x:0, y:0, z:-2}); // 初期位置を調整
+        }
+      });
 
       // ==============================
       // 左ジョイスティック（上昇・下降・旋回）
@@ -58,8 +70,8 @@
           const pos = drone.getAttribute("position");
           const rot = drone.getAttribute("rotation");
 
-          // 上昇・下降（反転修正済み）
-          pos.y -= data.vector.y * 0.05;
+          // 上昇・下降
+          pos.y += data.vector.y * 0.05;
 
           // 左旋回・右旋回
           rot.y += data.vector.x * 2;
@@ -83,8 +95,8 @@
         if (data && data.vector) {
           const pos = drone.getAttribute("position");
 
-          // 前進・後退（反転修正済み）
-          pos.z -= data.vector.y * 0.05;
+          // 前進・後退
+          pos.z += data.vector.y * 0.05;
 
           // 左右移動
           pos.x += data.vector.x * 0.05;
